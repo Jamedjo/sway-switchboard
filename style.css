@@ -1,0 +1,192 @@
+/* sway-switchboard's default look, which is sway's own.
+ *
+ * The colours below are the ones sway's example configuration uses for
+ * window borders -- #222222 for the background, #333333 for an unfocused
+ * frame, #285577 filled and #4c7899 edged for a focused one -- so out of the
+ * box the menu looks like part of the desktop it opens on rather than like
+ * somebody else's theme.
+ *
+ * This file is compiled into the binary. To wear your own colours instead,
+ * drop a copy at ~/.config/switchboard/style.css; that one is read at startup
+ * and wins, and since the menu is built fresh every time it opens, editing it
+ * is the same as reloading it.
+ *
+ * GTK4 CSS.
+ */
+
+@define-color nav-ground   #222222;
+@define-color nav-elevated #333333;
+@define-color twilight     #3c3c3c;
+@define-color blue         #4c7899;
+@define-color blue-deep    #285577;
+@define-color gold         #2e9ef4;
+@define-color danger       #900000;
+
+/* The window itself is only a carrier: layer-shell gives it the whole screen
+   edge, and anything painted here would paint over the desktop. */
+window.switchboard {
+    background: transparent;
+}
+
+.cascade {
+    margin: 0;
+}
+
+.panel {
+    /* Wide enough for a name and a line of programs under it. The rows are
+       two-line cards now, so a narrow panel would wrap the chips. */
+    min-width: 236px;
+    background: @nav-ground;
+    border: 1px solid alpha(@blue, 0.5);
+    border-radius: 11px;
+    padding: 6px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+}
+
+.phead {
+    padding: 7px 10px 8px 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid alpha(@blue, 0.22);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    color: alpha(#e2eaf6, 0.42);
+}
+
+.phead .tally {
+    letter-spacing: 0;
+}
+
+.divider {
+    background: alpha(@blue, 0.22);
+    margin: 5px 8px;
+    min-height: 1px;
+}
+
+/* --- rows ---------------------------------------------------------------- */
+
+button.row {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 7px;
+    padding: 7px 10px;
+    min-height: 0;
+    color: alpha(#e2eaf6, 0.72);
+}
+
+button.row:hover {
+    background: @nav-elevated;
+    color: #e2eaf6;
+}
+
+button.row.trail {
+    background: alpha(@blue, 0.1);
+    color: #e2eaf6;
+}
+
+/* Where you are. The same fill the focused workspace takes in the bar, so the
+   two agree without having to be read. */
+button.row.here {
+    background: @blue-deep;
+    color: #ffffff;
+}
+
+button.row.urgent {
+    box-shadow: inset 2px 0 0 @gold;
+}
+
+button.row.new {
+    color: alpha(#e2eaf6, 0.42);
+}
+
+button.row.new:hover {
+    color: #e2eaf6;
+}
+
+.name {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* The second line of a row: what is running there, or the group's pips.
+   Indented to line up with the name rather than the icon, so the two lines
+   read as one block. */
+.detail {
+    margin-left: 26px;
+}
+
+.chip {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    color: alpha(#e2eaf6, 0.34);
+}
+
+button.row.here .chip,
+button.row:hover .chip {
+    color: alpha(#ffffff, 0.6);
+}
+
+.glyph {
+    font-family: "Ubuntu Nerd Font", monospace;
+    font-size: 14px;
+}
+
+.slot {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    font-feature-settings: "tnum";
+    color: alpha(#e2eaf6, 0.42);
+    background: alpha(#ffffff, 0.06);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+button.row.here .slot {
+    background: @gold;
+    color: #06121f;
+}
+
+/* Two figures on a row is one too many unless they line up, so both are
+   monospaced with fixed widths: the slot as a badge on the left, the window
+   count as a bare figure on the right. Neither shifts the name between rows. */
+.count {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-feature-settings: "tnum";
+    color: alpha(#e2eaf6, 0.32);
+    padding: 0 2px;
+}
+
+button.row.here .count,
+button.row:hover .count {
+    color: alpha(#ffffff, 0.7);
+}
+
+.chev {
+    color: alpha(#e2eaf6, 0.42);
+    font-size: 13px;
+}
+
+button.row:hover .chev,
+button.row.trail .chev {
+    color: #e2eaf6;
+}
+
+/* --- pips ---------------------------------------------------------------- */
+
+.pip {
+    min-width: 4px;
+    min-height: 4px;
+    border-radius: 999px;
+    background: alpha(#ffffff, 0.2);
+}
+
+.pip.busy {
+    background: alpha(@blue, 0.6);
+}
+
+.pip.here {
+    background: @gold;
+}

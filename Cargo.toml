@@ -1,0 +1,12 @@
+[package]
+name = "sway-switchboard"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# v4_12 is what CssProvider::load_from_string needs; the system
+# GTK is 4.14.5, so the floor is comfortably met.
+gtk = { version = "0.10.3", package = "gtk4", features = ["v4_12"] }
+layer_shell = { version = "0.7", package = "gtk4-layer-shell" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
