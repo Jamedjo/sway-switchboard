@@ -1,8 +1,12 @@
 //! Shared innards for the two tools in here.
 //!
-//! The menu itself is one binary; the parts that are about getting a window
-//! on screen and dressing it live here, where a second tool could reach them.
+//! sway-switchboard is a workspace menu; sway-cheatsheet is a keybinding
+//! reference. They have almost nothing in common except how they get on
+//! screen -- a layer-shell overlay wearing a stylesheet from the dotfiles --
+//! so that part lives here and the rest does not.
 
+pub mod bindings;
+pub mod groups;
 pub mod icons;
 pub mod shell;
 pub mod sway;

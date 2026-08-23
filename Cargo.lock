@@ -633,6 +633,7 @@ dependencies = [
  "gtk4-layer-shell",
  "serde",
  "serde_json",
+ "toml",
 ]
 
 [[package]]
