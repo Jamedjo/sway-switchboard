@@ -5,8 +5,14 @@
  * ~/.config/sway-cheatsheet/style.css to wear your own instead.
  *
  * GTK4 CSS. The sheet is read, not operated, so almost everything here is
- * typography: the chord in mono at a fixed width so the column is a column,
- * and what it does in the body face beside it.
+ * typography and space: what a binding does, then the chord under it as one
+ * keycap per key.
+ *
+ * The program emits the caps as separate labels -- .mod on every modifier
+ * with .mod-super/.mod-ctrl/.mod-alt/.mod-shift saying which, .key on the one
+ * that does the thing, .sep on the "/" or "…" between two spellings of the
+ * same binding -- so a stylesheet that ignores all of that still gets a
+ * readable chord, just without the caps.
  */
 
 @define-color nav-ground   #222222;
@@ -44,69 +50,141 @@ scrolledwindow > viewport,
     background-color: transparent;
 }
 
+/* Nothing at the sides or the bottom: the footer band runs the full width and
+   carries the sheet's bottom corners, so the inset the rest of the sheet
+   keeps is on the header and the lanes instead. */
 .sheet {
     background: @nav-ground;
     border: 1px solid alpha(@blue, 0.4);
     border-radius: 16px;
-    padding: 24px 28px 26px 28px;
+    padding: 20px 0 0 0;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
     color: alpha(#e2eaf6, 0.78);
 }
 
+/* The title carries the weight; the hint beside it states the one behaviour a
+   first-time reader cannot guess. */
 .sheet-head {
-    margin-bottom: 22px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid alpha(@blue, 0.22);
+    margin: 0 18px 18px 18px;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 .sheet-title {
-    font-size: 20px;
+    font-size: 28px;
     font-weight: 700;
     color: #ffffff;
 }
 
+.sheet-hint {
+    font-size: 12px;
+    color: alpha(#e2eaf6, 0.4);
+}
+
+/* The tally wears the same capsule the keycaps do, so the two things on the
+   sheet made of figures are made of the same stuff. */
 .sheet-tally {
-    font-family: "IBM Plex Mono", monospace;
     font-size: 11px;
     letter-spacing: 1.4px;
-    color: alpha(#e2eaf6, 0.38);
+    font-feature-settings: "tnum";
+    color: alpha(#e2eaf6, 0.55);
+    background-color: alpha(#ffffff, 0.06);
+    border-radius: 999px;
+    padding: 5px 11px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* Each group is one child of the flow box, so its own spacing is what keeps
-   the columns apart rather than a fixed lane width. */
+.columns {
+    padding: 0 18px;
+}
+
+/* Air above a heading, not below it: a heading belongs to the rows under it. */
 .group {
-    margin-bottom: 4px;
+    margin-bottom: 18px;
+    padding: 0 10px;
 }
 
-/* The mode a binding belongs to. "default" is the one you are in almost
-   always, so it reads as a quiet label rather than a shout. */
-/* A heading belongs to the rows under it, so nearly all the air goes above.
-   Sitting midway between two groups it read as a footer for the one before.
-   The first group in a column has nothing above it to be pushed away from,
-   but the margin is harmless there. */
 .section-head {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 11px;
-    letter-spacing: 1.6px;
+    font-size: 10px;
+    letter-spacing: 1.8px;
     text-transform: uppercase;
     color: @gold;
-    margin-top: 20px;
-    margin-bottom: 3px;
+    margin-top: 0;
+    margin-bottom: 8px;
 }
 
+/* A binding is two lines: what it does, then how to do it. The sentence goes
+   first -- you arrive at the sheet knowing what you want, not which key it is
+   -- so the eye runs down prose with the chords indented under it. */
 .binding {
-    padding: 2px 0;
+    padding: 4px 8px 5px 8px;
+    border-radius: 11px;
 }
 
-/* The chord. Fixed width, so the descriptions start at one place down the
-   whole column and the eye can run down either side. */
-.keys {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 13px;
-    color: @blue;
+.binding:hover {
+    background-color: rgba(255, 255, 255, 0.04);
 }
 
 .what {
-    font-size: 14px;
-    color: alpha(#e2eaf6, 0.72);
+    font-size: 12px;
+    color: alpha(#e2eaf6, 0.78);
+}
+
+.keys {
+    font-size: 11px;
+    color: alpha(#e2eaf6, 0.7);
+    margin-top: 5px;
+}
+
+/* ---- keycaps -----------------------------------------------------------
+   One cap per key. Modifiers stay quiet and are told apart by how much of
+   sway's blue is in them; the final key -- the one that actually does the
+   thing -- is the filled one, so a chord reads modifier-then-action at a
+   glance.
+   ---------------------------------------------------------------------- */
+
+.keys .mod,
+.keys .key {
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin-right: 3px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.keys .mod {
+    background-color: @nav-elevated;
+    color: alpha(#e2eaf6, 0.7);
+}
+
+/* Super is deliberately the quietest thing here: it is in most of the
+   bindings, so colouring it would tint the whole page. */
+.keys .mod-super { background-color: @twilight;              color: alpha(#e2eaf6, 0.5); }
+.keys .mod-ctrl  { background-color: alpha(@blue, 0.55);     color: alpha(#e2eaf6, 0.9); }
+.keys .mod-alt   { background-color: alpha(@blue, 0.28);     color: alpha(#e2eaf6, 0.85); }
+.keys .mod-shift { background-color: alpha(#ffffff, 0.14);   color: alpha(#e2eaf6, 0.85); }
+
+.keys .key {
+    padding: 2px 7px;
+    background-color: @blue-deep;
+    color: #ffffff;
+    box-shadow: inset 0 1px 0 alpha(@blue, 0.7);
+}
+
+/* "b / v" and "1 … 0" are two keys offered for one job: set the mark between
+   them back and give it air so it is not read as part of either key name. */
+.keys .sep {
+    color: alpha(#e2eaf6, 0.4);
+    padding: 0 4px;
+}
+
+/* Footer band. Carries the one thing worth saying twice -- how to get back
+   here -- as real caps rather than prose. */
+.sheet-foot {
+    margin-top: 16px;
+    padding: 10px 28px 12px 28px;
+    border-top: 1px solid alpha(@blue, 0.22);
+    background-color: alpha(#ffffff, 0.03);
+    border-radius: 0 0 16px 16px;
+    font-size: 11px;
+    color: alpha(#e2eaf6, 0.45);
 }
