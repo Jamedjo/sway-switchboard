@@ -1,4 +1,4 @@
-//! Getting a window on screen as a layer-shell overlay, and dressing it.
+//! Getting the menu on screen as a layer-shell overlay, and dressing it.
 
 use gtk::gdk;
 use gtk::prelude::*;
@@ -8,8 +8,8 @@ use std::path::PathBuf;
 ///
 /// `name` picks the file under ~/.config; the compiled-in `fallback` is used
 /// when there is none, so the tool still looks like itself on a machine
-/// without the dotfiles. Read once at startup, which is enough: both tools are
-/// built fresh every time they are opened, so editing the file is the same as
+/// without the dotfiles. Read once at startup, which is enough: the menu is
+/// built fresh every time it opens, so editing the file is the same as
 /// reloading it.
 pub fn load_css(name: &str, fallback: &str) {
     let user = config_dir().join(name);
@@ -34,7 +34,7 @@ pub fn config_dir() -> PathBuf {
         })
 }
 
-/// Close on Escape. Both tools are transient things you dismiss.
+/// Close on Escape. The menu is a transient thing you dismiss.
 pub fn close_on_escape(window: &gtk::ApplicationWindow) {
     let keys = gtk::EventControllerKey::new();
     let win = window.clone();

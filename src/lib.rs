@@ -1,12 +1,10 @@
-//! Shared innards for the two tools in here.
+//! Shared innards for sway-switchboard.
 //!
-//! sway-switchboard is a workspace menu; sway-cheatsheet is a keybinding
-//! reference. They have almost nothing in common except how they get on
-//! screen -- a layer-shell overlay wearing a stylesheet from the dotfiles --
-//! so that part lives here and the rest does not.
+//! A menu that has to know what the desk looks like: the sway tree (`sway`),
+//! the shape the workspace names imply (`tree`), the glyph the bar already
+//! shows for each one (`icons`), and how the window gets on screen wearing a
+//! stylesheet from the dotfiles (`shell`).
 
-pub mod bindings;
-pub mod groups;
 pub mod icons;
 pub mod shell;
 pub mod sway;
