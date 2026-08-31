@@ -10,9 +10,9 @@
 //! end of the bar; growing rightwards would walk off the screen immediately.
 
 use gtk::prelude::*;
-use gtk::glib;
+use gtk::{glib, pango};
 use layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -48,23 +48,43 @@ fn main() -> glib::ExitCode {
     let app = gtk::Application::builder().application_id(APP_ID).build();
     app.connect_startup(|_| shell::load_css("switchboard/style.css", DEFAULT_CSS));
 
+    // Registered with GOption rather than read off argv, so it shows up in
+    // --help alongside GTK's own options instead of being folklore.
+    app.add_main_option(
+        "overview",
+        glib::Char::from(0),
+        glib::OptionFlags::NONE,
+        glib::OptionArg::None,
+        "Open centred and ordered by recency, for a gesture rather than a click",
+        None,
+    );
+    let overview = Rc::new(Cell::new(false));
+    {
+        let flag = overview.clone();
+        app.connect_handle_local_options(move |_, opts| {
+            flag.set(opts.lookup::<bool>("overview").ok().flatten().unwrap_or(false));
+            // Not handled here: carry on into the usual startup.
+            std::ops::ControlFlow::Continue(())
+        });
+    }
+
     // GtkApplication is single-instance over D-Bus already, so a second launch
     // arrives here as another activate on the first process rather than as a
     // second process. Building a window unconditionally therefore stacked
     // menus on top of each other. Closing instead makes the bar button a
     // toggle -- click to open, click again to collapse -- and makes a second
     // copy impossible rather than merely unlikely.
-    app.connect_activate(|app| {
+    app.connect_activate(move |app| {
         if let Some(open) = app.windows().first() {
             open.close();
         } else {
-            build_ui(app);
+            build_ui(app, overview.get());
         }
     });
     app.run()
 }
 
-fn build_ui(app: &gtk::Application) {
+fn build_ui(app: &gtk::Application, overview: bool) {
     let window = gtk::ApplicationWindow::builder()
         .application(app)
         .decorated(false)
@@ -75,24 +95,36 @@ fn build_ui(app: &gtk::Application) {
     // while it is up.
     window.init_layer_shell();
     window.set_layer(Layer::Overlay);
-    window.set_anchor(Edge::Top, true);
-    window.set_anchor(Edge::Right, true);
-    window.set_margin(Edge::Top, 4);
-    window.set_margin(Edge::Right, 8);
+    // The bar's menu hangs under the button that opened it and grows leftwards
+    // as you go deeper, so it is pinned to the top right. The grid is a fixed
+    // block with nowhere to grow, and layer-shell centres a surface on any
+    // axis it is not anchored to -- so leaving both edges alone is the whole
+    // of what puts it in the middle of the screen.
+    if !overview {
+        window.set_anchor(Edge::Top, true);
+        window.set_anchor(Edge::Right, true);
+        window.set_margin(Edge::Top, 4);
+        window.set_margin(Edge::Right, 8);
+    }
     window.set_keyboard_mode(KeyboardMode::OnDemand);
     window.add_css_class("switchboard");
 
-    let cascade = gtk::Box::new(gtk::Orientation::Horizontal, 6);
-    cascade.set_valign(gtk::Align::Start);
-    cascade.add_css_class("cascade");
-    window.set_child(Some(&cascade));
+    if overview {
+        window.set_child(Some(&board(&window)));
+    } else {
+        let cascade = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+        cascade.set_valign(gtk::Align::Start);
+        cascade.add_css_class("cascade");
+        window.set_child(Some(&cascade));
 
-    let state = Rc::new(RefCell::new(State {
-        workspaces: sway::workspaces(),
-        icons: Icons::load(),
-        mru: sway::mru_order(),
-        open: vec![Vec::new()],
-    }));
+        let state = Rc::new(RefCell::new(State {
+            workspaces: sway::workspaces(),
+            icons: Icons::load(),
+            mru: sway::mru_order(),
+            open: vec![Vec::new()],
+        }));
+        redraw(&cascade, &state, &window);
+    }
 
     // Clicking anywhere else closes it, the way a menu should. Two things have
     // to be watched, because neither covers the other: losing keyboard focus
@@ -134,8 +166,146 @@ fn build_ui(app: &gtk::Application) {
     // Escape closes. So does picking anything.
     shell::close_on_escape(&window);
 
-    redraw(&cascade, &state, &window);
     window.present();
+}
+
+
+// --- The board -------------------------------------------------------------
+//
+// The other view, and the reason there are two. The cascade groups, and
+// grouping fights recency: a group sits wherever its most recent workspace
+// puts it, so the top level reads as most-recent-project, and the workspace
+// you were in before this one can be hidden inside a collapsed group where you
+// cannot see it at all. Recency wants no groups.
+//
+// So this one has none. Every workspace is a card, in the order you left them,
+// and the shape is wide and shallow rather than narrow and tall -- a gesture
+// puts your eyes in the middle of the screen, and a column you have to read
+// down is the wrong thing to find there.
+
+/// Cards to a row.
+///
+/// Six is as wide as it goes: past that the eye travels further across than a
+/// glance covers. Rows are evened out rather than filled and left with a stub,
+/// so eight workspaces read as two rows of four, not as six and two.
+fn columns(count: usize) -> u32 {
+    let rows = (count + 5) / 6;
+    let rows = if rows == 0 { 1 } else { rows };
+    ((count + rows - 1) / rows).max(1) as u32
+}
+
+/// Workspaces in the order they were last focused, most recent first.
+///
+/// A workspace nobody has been in yet is not in the history at all. Those sort
+/// after everything that is, by slot, rather than jumping the queue.
+fn by_recency(workspaces: Vec<Workspace>, order: &[i64]) -> Vec<Workspace> {
+    let mut out = workspaces;
+    out.sort_by_key(|w| {
+        let at = order.iter().position(|id| *id == w.id).unwrap_or(usize::MAX);
+        (at, w.num)
+    });
+    out
+}
+
+fn board(window: &gtk::ApplicationWindow) -> gtk::Box {
+    let icons = Icons::load();
+    let workspaces = by_recency(sway::workspaces(), &sway::mru_order());
+
+    let flow = gtk::FlowBox::new();
+    flow.add_css_class("grid");
+    // Nothing here is selectable in GTK's sense -- a card is a button, and
+    // clicking it takes you somewhere rather than marking it.
+    flow.set_selection_mode(gtk::SelectionMode::None);
+    flow.set_homogeneous(true);
+    flow.set_row_spacing(6);
+    flow.set_column_spacing(6);
+    // Both bounds, so the grid keeps the shape `columns` chose instead of
+    // reflowing to whatever width the surface ends up with.
+    let cols = columns(workspaces.len());
+    flow.set_min_children_per_line(cols);
+    flow.set_max_children_per_line(cols);
+
+    for w in &workspaces {
+        flow.insert(&card(w, &icons, window), -1);
+    }
+
+    let panel = gtk::Box::new(gtk::Orientation::Vertical, 1);
+    panel.add_css_class("panel");
+    panel.add_css_class("board");
+    panel.append(&header(&[], workspaces.len()));
+    panel.append(&flow);
+    panel.append(&separator());
+    panel.append(&new_row(&[], window));
+    panel
+}
+
+/// One workspace. The slot and the glyph are the pair the bar shows, the name
+/// is the last segment of the path -- the same thing the cascade labels a leaf
+/// with -- and the project it sits under goes small underneath.
+///
+/// That way round because the leaf is what tells two workspaces apart. Most of
+/// them belong to the same handful of projects, so a card headed by its project
+/// would head most cards the same way, and the one word that says which
+/// workspace this actually is would be the small print.
+fn card(workspace: &Workspace, icons: &Icons, window: &gtk::ApplicationWindow) -> gtk::Button {
+    let outer = gtk::Box::new(gtk::Orientation::Vertical, 2);
+
+    let top = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+    let slot = gtk::Label::new(Some(&workspace.num.to_string()));
+    slot.add_css_class("slot");
+    slot.set_width_chars(2);
+    slot.set_xalign(1.0);
+    top.append(&slot);
+
+    let glyph = gtk::Label::new(Some(icons.get(&workspace.path).unwrap_or(" ")));
+    glyph.add_css_class("glyph");
+    top.append(&glyph);
+
+    let head = workspace
+        .path
+        .last()
+        .map(|s| tree::titleize(s))
+        .unwrap_or_else(|| workspace.num.to_string());
+    let name = gtk::Label::new(Some(&head));
+    name.add_css_class("name");
+    name.set_xalign(0.0);
+    name.set_hexpand(true);
+    name.set_ellipsize(pango::EllipsizeMode::End);
+    top.append(&name);
+    outer.append(&top);
+
+    // A workspace at the top level has no project over it, but the line still
+    // has to be there: the cards are homogeneous, and a missing line would
+    // leave the chips of one card sitting higher than its neighbours'.
+    let depth = workspace.path.len().saturating_sub(1);
+    let rest: Vec<String> = workspace.path[..depth].iter().map(|s| tree::titleize(s)).collect();
+    let trail = gtk::Label::new(Some(&rest.join(" \u{b7} ")));
+    trail.add_css_class("path");
+    trail.set_xalign(0.0);
+    trail.set_ellipsize(pango::EllipsizeMode::End);
+    outer.append(&trail);
+
+    if let Some(detail) = chips(&workspace.apps) {
+        detail.add_css_class("detail");
+        outer.append(&detail);
+    }
+
+    let button = gtk::Button::builder().child(&outer).build();
+    button.add_css_class("card");
+    if workspace.focused {
+        button.add_css_class("here");
+    }
+    if workspace.urgent {
+        button.add_css_class("urgent");
+    }
+
+    let num = workspace.num;
+    let window = window.clone();
+    button.connect_clicked(move |_| {
+        sway::focus(num);
+        window.close();
+    });
+    button
 }
 
 /// Rebuild every panel from `state.open`.

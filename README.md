@@ -27,6 +27,30 @@ Glyphs come from waybar's `workspace-icons.json`, keyed the same way, so a row
 wears the icon the bar already shows. Casing follows the same acronym list
 `sway-ws-lib` uses, so "API V2" reads the same in both.
 
+## Two views
+
+The bar button opens the cascade: grouped, ordered by slot, anchored under the
+button that opened it. The same project is in the same place every time, so
+muscle memory does the reading.
+
+`--overview` opens the board instead, bound to a three-finger swipe up. It is a
+different view rather than the same one rearranged, because grouping and
+recency want different shapes: a group sits wherever its most recent workspace
+puts it, so a grouped menu ordered by recency reads as most-recent-*project*,
+and the workspace you were in before this one can be hidden inside a collapsed
+group where you cannot see it at all. So the board has no groups and nothing to
+open -- every workspace is a card, in the order you left them, six across.
+
+A card is named by the last segment of its path, the same thing the cascade
+labels a leaf with, and the project above it goes small underneath. That way
+round because the leaf is what tells two workspaces apart: most of them belong
+to the same few projects, and a card headed by its project would head most
+cards identically.
+
+It centres itself, which costs nothing: layer-shell centres a surface on any
+axis it is not anchored to, and unlike the cascade the board is a fixed block
+with nowhere to grow.
+
 ## Why the panels open leftwards
 
 The button that opens it lives at the right end of the bar. Growing rightwards
