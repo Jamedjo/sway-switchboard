@@ -106,7 +106,10 @@ fn build_ui(app: &gtk::Application, overview: bool) {
         window.set_margin(Edge::Top, 4);
         window.set_margin(Edge::Right, 8);
     }
-    window.set_keyboard_mode(KeyboardMode::OnDemand);
+    // Exclusive, not on-demand. sway 1.11 clears keyboard focus from an
+    // on-demand layer surface on every commit, including the one that maps it.
+    // Losing focus closes the menu, so on-demand closed it as soon as it opened.
+    window.set_keyboard_mode(KeyboardMode::Exclusive);
     window.add_css_class("switchboard");
 
     if overview {
