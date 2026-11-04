@@ -190,3 +190,62 @@ button.row.trail .chev {
 .pip.here {
     background: @gold;
 }
+
+/* --- the board ----------------------------------------------------------- */
+
+/* The other view: no groups, one card per workspace, most recent first. The
+   same panel laid out wide instead of deep, so the min-width meant for a
+   single column of rows is dropped. */
+.panel.board {
+    min-width: 0;
+    padding: 10px;
+}
+
+.grid {
+    background: transparent;
+    padding: 2px;
+}
+
+/* A card wears a faint fill at rest: a grid of transparent buttons on one
+   ground has nothing to say where one card stops and the next starts. */
+button.card {
+    background: @nav-elevated;
+    border: none;
+    box-shadow: none;
+    border-radius: 9px;
+    padding: 9px 11px;
+    min-width: 176px;
+    min-height: 0;
+    color: alpha(#e2eaf6, 0.72);
+}
+
+button.card:hover {
+    background: alpha(#e2eaf6, 0.12);
+    color: #e2eaf6;
+}
+
+button.card.here {
+    background: @blue-deep;
+    color: #ffffff;
+}
+
+button.card.urgent {
+    box-shadow: inset 2px 0 0 @gold;
+}
+
+/* What is left of the path once the name has taken the head of it, kept at a
+   fixed height whether or not there is anything in it: the cards are
+   homogeneous, and a one-segment name with no second line would otherwise lift
+   its chips above every neighbour's. */
+button.card .path {
+    font-size: 10px;
+    color: alpha(#e2eaf6, 0.42);
+    margin-left: 26px;
+    min-height: 13px;
+}
+
+button.card.here .path,
+button.card.here .chip,
+button.card:hover .chip {
+    color: alpha(#ffffff, 0.66);
+}
